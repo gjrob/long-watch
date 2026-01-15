@@ -6,15 +6,22 @@ import ChangeStrip from '@/components/timeline/ChangeStrip';
 import PublicSummary from '@/components/public/PublicSummary';
 import AnomalyLog from '@/components/expert/AnomalyLog';
 
-export default async function Page() {
-  // Server-side fetches (stable + cache-friendly)
-  const [latestRes, anomaliesRes] = await Promise.all([
-fetch('http://localhost/api/signals/latest', { cache: 'no-store' }),
-    fetch('http://localhost/api/anomalies', { cache: 'no-store' }),
-  ]);
+export default function Page() {
+  // Placeholder props; no server fetch (prevents SSR runtime failures)
+  const latest = {
+    observed_at: new Date().toISOString(),
+    signal_value: 100,
+    temperature_value: 20,
+    environment_value: 0.5,
+    integrity_flag: true,
+    batch_hash: 'placeholder',
+  };
 
-  const latest = latestRes.ok ? await latestRes.json() : null;
-  const anomalies = anomaliesRes.ok ? await anomaliesRes.json() : { items: [] };
+  const anomalies = {
+    items: [
+      { detected_at: new Date().toISOString(), sigma: 2.4, status: 'resolved' },
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
@@ -48,7 +55,7 @@ fetch('http://localhost/api/signals/latest', { cache: 'no-store' }),
         <div className="mt-6 grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-7">
             <div className="rounded-md bg-[#141922] p-6">
-              <h2 className="text-sm font-semibold text-[#E6EAF2]">Public View</h2>
+              <h2 className="text-sm font-semibold">Public View</h2>
               <div className="mt-4">
                 <PublicSummary latest={latest} />
               </div>
@@ -57,9 +64,9 @@ fetch('http://localhost/api/signals/latest', { cache: 'no-store' }),
 
           <div className="col-span-12 lg:col-span-5">
             <div className="rounded-md bg-[#141922] p-6">
-              <h2 className="text-sm font-semibold text-[#E6EAF2]">Expert View</h2>
+              <h2 className="text-sm font-semibold">Expert View</h2>
               <div className="mt-4">
-                <AnomalyLog items={anomalies?.items ?? []} />
+                <AnomalyLog items={anomalies.items} />
               </div>
             </div>
           </div>
