@@ -9,8 +9,8 @@ import AnomalyLog from '@/components/expert/AnomalyLog';
 export default async function Page() {
   // Server-side fetches (stable + cache-friendly)
   const [latestRes, anomaliesRes] = await Promise.all([
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/signals/latest`, { cache: 'no-store' }),
-    fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/anomalies`, { cache: 'no-store' }),
+fetch('http://localhost/api/signals/latest', { cache: 'no-store' }),
+    fetch('http://localhost/api/anomalies', { cache: 'no-store' }),
   ]);
 
   const latest = latestRes.ok ? await latestRes.json() : null;
