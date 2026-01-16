@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/generate?token=longwatch-cron-9f4c3b7e2a8d4f6a91e0c2b5",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

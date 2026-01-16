@@ -1,40 +1,38 @@
-export const runtime = 'nodejs';
+import { supabaseAnonServer } from "@/lib/supabase/server";
 
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const days = clamp(Number(searchParams.get('days') ?? 30), 1, 365);
+  const seriesKey = searchParams.get("series_key") ?? "lw.core.default";
+  const limit = Math.min(Number(searchParams.get("limit") ?? 200), 2000);
+  const since = searchParams.get("since"); // ISO timestamp or null
 
-  // Placeholder time series: one point per hour
-  const now = Date.now();
-  const points: Array<{
-    observed_at: string;
-    signal_value: number;
-    temperature_value: number;
-    environment_value: number;
-    integrity_flag: boolean;
-    batch_hash: string;
-  }> = [];
+  const supabase = supabaseAnonServer();
 
-  const hours = days * 24;
-  for (let i = hours; i >= 0; i--) {
-    const t = now - i * 60 * 60 * 1000;
-    const signal = 100 - i * 0.001;
-    const temperature = 20 + Math.sin(i / 24) * 2;
-    const environment = 0.5 + Math.sin(i / 48) * 0.05;
+  let q = supabase
+    .from("signals")
+    .select("id, observed_at, signal_type, series_key, source, value_json, meta_json, row_hash, prev_hash")
+    .eq("is_public", true)
+    .eq("series_key", seriesKey)
+    .order("observed_at", { ascending: true })
+    .limit(limit);
 
-    points.push({
-      observed_at: new Date(t).toISOString(),
-      signal_value: signal,
-      temperature_value: temperature,
-      environment_value: environment,
-      integrity_flag: true,
-      batch_hash: 'placeholder',
-    });
+  if (since) q = q.gte("observed_at", since);
+
+  const { data, error } = await q;
+
+  if (error) {
+    return Response.json(
+      { ok: false, error: "db_read_failed", detail: error.message },
+      { status: 500 }
+    );
   }
 
-  return Response.json({ days, points });
+  return Response.json({
+    ok: true,
+    series_key: seriesKey,
+    count: data?.length ?? 0,
+    points: data ?? [],
+  });
 }
