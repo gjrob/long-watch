@@ -1,7 +1,23 @@
-export default function ChangeStrip() {
-  // Placeholder strip: 30 markers, one anomaly
+import type { AnomalyItem } from '@/lib/types';
+
+interface ChangeStripProps {
+  anomalies: AnomalyItem[];
+}
+
+export default function ChangeStrip({ anomalies }: ChangeStripProps) {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
   const markers = Array.from({ length: 30 }).map((_, i) => i);
-  const anomalyIndex = 18;
+
+  // Map anomalies to day indices (0 = 30 days ago, 29 = today)
+  const anomalyDays = new Set(
+    anomalies
+      .map((a) => {
+        const daysAgo = Math.floor((now - new Date(a.detected_at).getTime()) / dayMs);
+        return 29 - daysAgo;
+      })
+      .filter((d) => d >= 0 && d < 30)
+  );
 
   return (
     <div>
@@ -14,11 +30,16 @@ export default function ChangeStrip() {
 
       <div className="mt-3 flex items-center justify-between">
         {markers.map((i) => {
-          const isAnomaly = i === anomalyIndex;
+          const isAnomaly = anomalyDays.has(i);
+          const daysAgo = 29 - i;
           return (
             <div
               key={i}
-              title={isAnomaly ? 'Transient deviation · auto-resolved · logged' : 'Normal'}
+              title={
+                isAnomaly
+                  ? `${daysAgo}d ago · deviation detected · logged`
+                  : `${daysAgo}d ago · normal`
+              }
               className={
                 isAnomaly
                   ? 'h-2 w-2 rounded-full border border-[#D4A373] bg-transparent'

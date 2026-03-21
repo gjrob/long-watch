@@ -1,13 +1,10 @@
-type Latest = {
-  observed_at: string;
-  signal_value: number;
-  temperature_value: number;
-  environment_value: number;
-  integrity_flag: boolean;
-  batch_hash: string;
-} | null;
+import type { LatestSignal } from '@/lib/types';
 
-export default function StatusCard({ latest }: { latest: Latest }) {
+interface StatusCardProps {
+  latest: LatestSignal | null;
+}
+
+export default function StatusCard({ latest }: StatusCardProps) {
   const stable = latest?.integrity_flag ?? true;
   const label = stable ? 'STABLE' : 'INVESTIGATING';
   const sub = stable
