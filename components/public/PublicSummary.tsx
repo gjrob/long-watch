@@ -1,13 +1,10 @@
-type Latest = {
-  observed_at: string;
-  signal_value: number;
-  temperature_value: number;
-  environment_value: number;
-  integrity_flag: boolean;
-  batch_hash: string;
-} | null;
+import type { LatestSignal } from '@/lib/types';
 
-export default function PublicSummary({ latest }: { latest: Latest }) {
+interface PublicSummaryProps {
+  latest: LatestSignal | null;
+}
+
+export default function PublicSummary({ latest }: PublicSummaryProps) {
   const state = latest?.integrity_flag === false ? 'Investigating' : 'Stable';
 
   return (
@@ -18,7 +15,7 @@ export default function PublicSummary({ latest }: { latest: Latest }) {
       </div>
 
       <div className="rounded-md bg-[#1A2030] p-4">
-        <div className="text-xs text-[#9AA4B2]">What’s Measured</div>
+        <div className="text-xs text-[#9AA4B2]">What&apos;s Measured</div>
         <ul className="mt-2 space-y-1 text-sm text-[#E6EAF2]">
           <li>Energy emission (proxy)</li>
           <li>Temperature (proxy)</li>
