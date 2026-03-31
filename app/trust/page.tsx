@@ -1,8 +1,12 @@
+import CathedralArch from '@/components/layout/CathedralArch';
+import SuiteFooter from '@/components/layout/SuiteFooter';
+
 export const runtime = "nodejs";
 
 export default function TrustPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 text-neutral-900">
+      <CathedralArch position="top" />
       <h1 className="text-3xl font-semibold tracking-tight">
         Why The Long Watch Forbids Edits
       </h1>
@@ -81,7 +85,11 @@ export default function TrustPage() {
           <li><code>/api/verify/head</code></li>
           <li><code>/api/verify/series</code></li>
         </ul>
+        <div className="mt-8">
+          <SuiteFooter />
+        </div>
       </footer>
+      <CathedralArch position="bottom" />
     </main>
   );
 }

@@ -14,9 +14,18 @@ export default function Header({ lastUpdate, continuity }: HeaderProps) {
 
   return (
     <header className="flex items-start justify-between">
-      <div>
+      <div className="flex items-center gap-3">
+        <a href="https://cathedral-ledger.vercel.app" target="_blank" rel="noopener noreferrer">
+          <img
+            src="/brand/no-guidance-logo.svg"
+            alt="No Guidance"
+            className="h-8 w-auto"
+          />
+        </a>
+        <div>
         <h1 className="text-lg font-semibold">The Long Watch</h1>
         <p className="mt-1 text-xs text-[#9AA4B2]">Long-duration verification prototype</p>
+        </div>
       </div>
       <div className="text-right text-xs text-[#9AA4B2]">
         <div>Last update: {display}</div>

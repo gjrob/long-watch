@@ -1,0 +1,36 @@
+<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4da6ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a5cbf;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#7ec8ff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#4da6ff;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Lambda / A shape -->
+  <path d="M100 20 L45 160 L65 160 L100 65 L135 160 L155 160 Z" fill="url(#logoGrad)" />
+
+  <!-- Crosshair circle -->
+  <circle cx="100" cy="110" r="35" stroke="#4da6ff" stroke-width="1.5" fill="none" opacity="0.5" />
+
+  <!-- Crosshair lines -->
+  <line x1="100" y1="70" x2="100" y2="80" stroke="#4da6ff" stroke-width="1" opacity="0.5" />
+  <line x1="100" y1="140" x2="100" y2="150" stroke="#4da6ff" stroke-width="1" opacity="0.5" />
+  <line x1="60" y1="110" x2="70" y2="110" stroke="#4da6ff" stroke-width="1" opacity="0.5" />
+  <line x1="130" y1="110" x2="140" y2="110" stroke="#4da6ff" stroke-width="1" opacity="0.5" />
+
+  <!-- Eye shape -->
+  <path d="M78 110 Q100 90 122 110 Q100 130 78 110 Z" fill="none" stroke="#4da6ff" stroke-width="2" />
+
+  <!-- Eye glow -->
+  <circle cx="100" cy="110" r="8" fill="url(#eyeGlow)" />
+  <circle cx="100" cy="110" r="4" fill="white" />
+
+  <!-- Text -->
+  <text x="100" y="190" text-anchor="middle" fill="#4da6ff" font-family="sans-serif" font-weight="bold" font-size="16" letter-spacing="2">NO</text>
+  <text x="100" y="210" text-anchor="middle" fill="#4da6ff" font-family="sans-serif" font-weight="bold" font-size="16" letter-spacing="2">GUIDANCE</text>
+</svg>

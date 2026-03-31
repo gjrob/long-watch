@@ -23,6 +23,8 @@ import ContinuityStatus from '@/components/public/ContinuityStatus';
 import ContinuityDetail from '@/components/expert/ContinuityDetail';
 import AnchorStatus from '@/components/public/AnchorStatus';
 import AnchorDetail from '@/components/expert/AnchorDetail';
+import CathedralArch from '@/components/layout/CathedralArch';
+import SuiteFooter from '@/components/layout/SuiteFooter';
 
 const POLL_INTERVAL = 15_000;
 
@@ -61,6 +63,7 @@ export default function Page() {
   if (initialLoad && !data) {
     return (
       <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
+        <CathedralArch position="top" />
         <div className="mx-auto max-w-6xl px-6 py-8">
           <Header lastUpdate={null} continuity={null} />
           <div className="mt-12 text-center text-sm text-[#6B7280]">Loading observation data…</div>
@@ -73,6 +76,7 @@ export default function Page() {
 
   return (
     <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
+      <CathedralArch position="top" />
       <div className="mx-auto max-w-6xl px-6 py-8">
         <Header lastUpdate={data.fetched_at} continuity={data.continuity} />
 
@@ -221,8 +225,12 @@ export default function Page() {
           <div className="text-xs text-[#4A5568]">
             Powered by BlueTubeTV
           </div>
+          <div className="mt-4">
+            <SuiteFooter />
+          </div>
         </footer>
       </div>
+      <CathedralArch position="bottom" />
     </main>
   );
 }
