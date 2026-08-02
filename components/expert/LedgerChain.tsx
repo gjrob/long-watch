@@ -1,87 +1,45 @@
-import type { LedgerEntryPublic, LedgerSnapshot } from '@/lib/types';
+import type { LedgerEntryPublic } from '@/lib/types';
+import { utcStamp } from '@/lib/format';
 
-interface LedgerChainProps {
-  ledger: LedgerSnapshot;
-  tail: LedgerEntryPublic[];
-}
+/**
+ * The real tail of the hash chain, straight from `signals`. Each row's
+ * prev_hash should equal the row_hash of the previous row in the same series —
+ * that linkage is what the 86 existing rows already satisfy.
+ */
+export default function LedgerChain({ tail }: { tail: LedgerEntryPublic[] }) {
+  if (tail.length === 0) {
+    return <div className="text-sm text-[#9AA4B2]">No rows recorded.</div>;
+  }
 
-function truncate(hash: string, len: number = 10): string {
-  if (hash.length <= len) return hash;
-  return hash.slice(0, len) + '…';
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toISOString().replace('T', ' ').slice(0, 19) + 'Z';
-}
-
-export default function LedgerChain({ ledger, tail }: LedgerChainProps) {
   return (
     <div>
-      {/* Chain summary */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-        <div className="text-[#9AA4B2]">Chain depth</div>
-        <div className="font-mono text-[#E6EAF2]">{ledger.chain_depth}</div>
-
-        <div className="text-[#9AA4B2]">Head hash</div>
-        <div className="font-mono text-[#E6EAF2]" title={ledger.head_hash}>
-          {truncate(ledger.head_hash, 16)}
-        </div>
-
-        <div className="text-[#9AA4B2]">Genesis hash</div>
-        <div className="font-mono text-[#6B7280]" title={ledger.genesis_hash}>
-          {truncate(ledger.genesis_hash, 16)}
-        </div>
-
-        <div className="text-[#9AA4B2]">Merkle root</div>
-        <div className="font-mono text-[#E6EAF2]" title={ledger.merkle_root}>
-          {truncate(ledger.merkle_root, 16)}
-        </div>
-
-        <div className="text-[#9AA4B2]">Verified</div>
-        <div className="text-[#E6EAF2]">{ledger.chain_verified ? 'Yes' : 'No'}</div>
-      </div>
-
-      {/* Chain tail visualization */}
-      <div className="mt-5 text-xs text-[#9AA4B2]">Recent chain entries (newest first)</div>
-      <div className="mt-2 space-y-0">
-        {tail.map((entry, i) => (
-          <div key={entry.index} className="relative">
-            {/* Connector line */}
-            {i < tail.length - 1 && (
-              <div className="absolute left-[7px] top-[20px] h-[calc(100%-8px)] w-px bg-[#2A3242]" />
-            )}
-
-            <div className="flex items-start gap-3 py-1.5">
-              {/* Chain dot */}
-              <div className="mt-1 h-[14px] w-[14px] shrink-0 rounded-full border border-[#2A3242] bg-[#141922] flex items-center justify-center">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#4A5568]" />
-              </div>
-
-              {/* Entry content */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-xs text-[#9AA4B2]">#{entry.index}</span>
-                  <span className="text-xs text-[#6B7280]">{formatDate(entry.observed_at)}</span>
-                </div>
-                <div className="mt-0.5 font-mono text-xs text-[#E6EAF2]" title={entry.current_hash}>
-                  {truncate(entry.current_hash, 24)}
-                </div>
-                <div className="font-mono text-xs text-[#4A5568]" title={entry.prev_hash}>
-                  ← {truncate(entry.prev_hash, 16)}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Hash formula disclosure */}
-      <div className="mt-4 rounded-md bg-[#1A2030] px-3 py-2 text-xs leading-relaxed text-[#6B7280]">
-        Chain: SHA-256(prev_hash | observed_at | signal | temperature | environment)
-        <br />
-        Merkle leaf: SHA-256(&quot;leaf:&quot; + entry_hash) · node: SHA-256(&quot;node:&quot; + left + &quot;|&quot; + right)
-        <br />
-        Inclusion proof: /api/verify/inclusion?index=N
+      <table className="w-full text-left text-xs">
+        <thead className="text-[#6B7280]">
+          <tr>
+            <th className="pb-2 font-normal">Observed</th>
+            <th className="pb-2 font-normal">Series</th>
+            <th className="pb-2 font-normal">prev_hash</th>
+            <th className="pb-2 font-normal">row_hash</th>
+          </tr>
+        </thead>
+        <tbody className="text-[#E6EAF2]">
+          {tail.map((e) => (
+            <tr key={e.row_hash} className="border-t border-[#2A3242]">
+              <td className="py-2 font-mono">{utcStamp(e.observed_at)}</td>
+              <td className="py-2 font-mono text-[#9AA4B2]">{e.series_key}</td>
+              <td className="py-2 font-mono text-[#6B7280]" title={e.prev_hash ?? ''}>
+                {e.prev_hash ? e.prev_hash.slice(0, 10) + '…' : '—'}
+              </td>
+              <td className="py-2 font-mono" title={e.row_hash}>
+                {e.row_hash.slice(0, 10) + '…'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="mt-3 text-xs text-[#6B7280]">
+        Independent verification: <span className="font-mono">/api/verify/series</span> ·{' '}
+        <span className="font-mono">/api/verify/head</span>
       </div>
     </div>
   );

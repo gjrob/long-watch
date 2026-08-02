@@ -1,54 +1,94 @@
-export interface LatestSignal {
+/**
+ * Types for The Long Watch dashboard.
+ *
+ * Every field here must be answerable by a query against `signals` or
+ * `anomalies`. Fields that had no source in the database — signal_value,
+ * temperature_value, environment_value, sigma-scored anomalies, simulated
+ * merkle roots and anchors — were removed rather than kept and filled with
+ * generated values.
+ */
+
+/** One row of the real `signals` table, as displayed. */
+export interface Observation {
+  id: string;
   observed_at: string;
-  signal_value: number;
-  temperature_value: number;
-  environment_value: number;
-  integrity_flag: boolean;
-  batch_hash: string;
+  series_key: string;
+  source: string | null;
+  signal_type: string | null;
+  row_hash: string;
+  prev_hash: string | null;
+  period_key: string | null;
+  value_json: unknown;
 }
 
-export interface AnomalyItem {
-  detected_at: string;
-  sigma: number;
-  status: string;
-  description: string;
+/** Per-series rollup: how many rows, and how long since the last one. */
+export interface SeriesSummary {
+  series_key: string;
+  count: number;
+  first_observed_at: string | null;
+  last_observed_at: string | null;
+  /** Seconds between last_observed_at and the time of the request. */
+  age_seconds: number | null;
+}
+
+/**
+ * Whether the instrument is currently watching.
+ *
+ * `is_observing` is false when the newest observation is older than
+ * `stale_after_seconds`. There is no third state and no optimistic default:
+ * if we cannot read the table, this is false.
+ */
+export interface ObservingState {
+  is_observing: boolean;
+  last_observed_at: string | null;
+  age_seconds: number | null;
+  expected_interval_seconds: number;
+  stale_after_seconds: number;
+}
+
+export interface AnomalyRecord {
+  id: string;
+  observed_at: string;
+  series_key: string | null;
+  severity: string | null;
+  kind: string | null;
+  message: string | null;
 }
 
 export interface LedgerSnapshot {
+  /** Total rows in `signals`. */
   row_count: number;
-  head_hash: string;
-  genesis_hash: string;
-  merkle_root: string;
-  chain_depth: number;
-  chain_verified: boolean;
-  mutation_attempts: number;
-}
-
-export interface TimeseriesPoint {
-  observed_at: string;
-  signal_value: number;
-  temperature_value: number;
-  environment_value: number;
+  /** row_hash of the newest observation, or null if the table is empty. */
+  head_hash: string | null;
+  /** row_hash of the oldest observation. */
+  genesis_hash: string | null;
+  /** Distinct series_key count. */
+  series_count: number;
 }
 
 export interface LedgerEntryPublic {
-  index: number;
   observed_at: string;
-  prev_hash: string;
-  current_hash: string;
-}
-
-export interface DeltaValues {
-  signal_24h: number;
-  signal_7d: number;
-  temperature_24h: number;
-  temperature_7d: number;
+  series_key: string;
+  prev_hash: string | null;
+  row_hash: string;
 }
 
 export interface ContinuityGap {
   expected_at: string;
   previous_at: string;
   duration_hours: number;
+  missed_count: number;
+  /** True when the silence runs to the end of the window (still ongoing). */
+  ongoing: boolean;
+}
+
+export interface ObservationPeriod {
+  start: string;
+  end: string;
+  count: number;
+  duration_hours: number;
+  gap_after_hours: number | null;
+  gap_after_missed: number | null;
 }
 
 export interface Continuity {
@@ -57,51 +97,39 @@ export interface Continuity {
   total_observed: number;
   continuity_pct: number;
   gap_count: number;
+  missed_total: number;
   gaps: ContinuityGap[];
+  gaps_truncated: boolean;
   longest_gap_hours: number;
+  periods: ObservationPeriod[];
   window_start: string;
   window_end: string;
 }
 
-export interface ExternalAnchorPublic {
-  chain_index: number;
-  anchored_at: string;
-  internal_hash: string;
-  /** 'bitcoin', 'bitcoin+rekor', or 'simulated' */
-  external_source: string;
-  /** For real: btc_hash or btc_hash|rekor_root_hash. For simulated: deterministic hash. */
-  external_reference: string;
-  external_height: number;
-  binding_hash: string;
-  binding_verified: boolean;
-  external_verifiable: boolean;
-  /** Present only on real dual-source anchors */
-  rekor_root_hash?: string;
-  /** Present only on real dual-source anchors */
-  rekor_tree_size?: number;
-}
-
-export interface Anchoring {
-  anchor_count: number;
-  anchor_interval: number;
-  verified: boolean;
-  anchor_coverage: number;
-  real_anchor_present: boolean;
-  /** First UTC date with a persisted real anchor, or null if none exist */
-  anchoring_start_date: string | null;
-  anchors: ExternalAnchorPublic[];
+/** Real numeric series: latency of the outbound HTTP probe. */
+export interface ProbePoint {
+  observed_at: string;
+  latency_ms: number | null;
+  status: number | null;
+  ok: boolean;
 }
 
 export interface DashboardData {
-  latest: LatestSignal;
-  anomalies: AnomalyItem[];
+  observing: ObservingState;
+  latest: Observation | null;
+  series: SeriesSummary[];
+  anomalies: AnomalyRecord[];
   ledger: LedgerSnapshot;
-  /** Last 8 chain entries (most recent first) for UI display */
   ledger_tail: LedgerEntryPublic[];
-  timeseries: TimeseriesPoint[];
-  delta: DeltaValues;
+  probe: ProbePoint[];
   continuity: Continuity;
-  anchoring: Anchoring;
-  stability_days: number;
+  /** Time the request was served. Explicitly NOT an observation time. */
   fetched_at: string;
+  /** Populated when a query failed, so the UI can say so instead of guessing. */
+  error: string | null;
+}
+
+/** Kept for the timeseries shape used by continuity analysis. */
+export interface TimeseriesPoint {
+  observed_at: string;
 }

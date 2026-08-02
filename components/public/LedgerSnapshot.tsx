@@ -1,50 +1,43 @@
 import type { LedgerSnapshot as LedgerData } from '@/lib/types';
 
-interface LedgerSnapshotProps {
-  ledger: LedgerData;
+function truncate(h: string | null): string {
+  if (!h) return '—';
+  return h.slice(0, 8) + '…' + h.slice(-4);
 }
 
-function truncateHash(hash: string): string {
-  return hash.slice(0, 8) + '…' + hash.slice(-4);
-}
-
-export default function LedgerSnapshot({ ledger }: LedgerSnapshotProps) {
+/**
+ * Real chain endpoints from the database. The merkle root and the "mutation
+ * attempts: 0" row are gone: the root was computed over a generated chain, and
+ * nothing counts mutation attempts.
+ */
+export default function LedgerSnapshot({ ledger }: { ledger: LedgerData }) {
   return (
     <div>
       <div className="text-sm font-semibold">Ledger Snapshot</div>
       <div className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-[#9AA4B2]">Chain depth</span>
-          <span className="text-[#E6EAF2]">{ledger.chain_depth}</span>
+          <span className="text-[#9AA4B2]">Rows</span>
+          <span className="text-[#E6EAF2]">{ledger.row_count.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-[#9AA4B2]">Series</span>
+          <span className="text-[#E6EAF2]">{ledger.series_count}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#9AA4B2]">Head hash</span>
-          <span className="font-mono text-xs text-[#E6EAF2]" title={ledger.head_hash}>
-            {truncateHash(ledger.head_hash)}
+          <span className="font-mono text-xs text-[#E6EAF2]" title={ledger.head_hash ?? ''}>
+            {truncate(ledger.head_hash)}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-[#9AA4B2]">Genesis</span>
-          <span className="font-mono text-xs text-[#6B7280]" title={ledger.genesis_hash}>
-            {ledger.genesis_hash.slice(0, 8)}…
+          <span className="font-mono text-xs text-[#6B7280]" title={ledger.genesis_hash ?? ''}>
+            {truncate(ledger.genesis_hash)}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-[#9AA4B2]">Merkle root</span>
-          <span className="font-mono text-xs text-[#E6EAF2]" title={ledger.merkle_root}>
-            {truncateHash(ledger.merkle_root)}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#9AA4B2]">Integrity</span>
-          <span className="text-[#E6EAF2]">
-            {ledger.chain_verified ? 'Verified' : 'Broken'}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-[#9AA4B2]">Mutation attempts</span>
-          <span className="text-[#E6EAF2]">{ledger.mutation_attempts}</span>
-        </div>
+      </div>
+      <div className="mt-3 text-xs text-[#6B7280]">
+        Chain verification: <span className="font-mono">/api/verify/head</span>
       </div>
     </div>
   );
