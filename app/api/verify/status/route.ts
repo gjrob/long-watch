@@ -25,7 +25,11 @@ export async function GET(req: Request) {
   // count
   const { count, error: e2 } = await supabase
     .from("signals")
-    .select("id", { count: "exact", head: true })
+    // NOT head:true — a HEAD request to this project is answered 503 by the
+    // CDN in front of PostgREST when it originates in a browser. This route is
+    // server-side so it was never hit by that, but the pattern must not spread.
+    .select("id", { count: "exact" })
+    .range(0, 0)
     .eq("is_public", true)
     .eq("series_key", series_key);
 
