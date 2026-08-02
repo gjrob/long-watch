@@ -23,9 +23,18 @@ function stableStringify(obj: unknown): string {
     "}"
   );
 }
-function periodKey1Min(d: Date) {
-  const bucket = Math.floor(d.getTime() / (60 * 1000));
-  return `1m:${bucket}`;
+/**
+ * 10-minute observation bucket.
+ *
+ * This MUST stay at 10 minutes: every historical row uses it. The January
+ * tail carries period_key "10m:2947636", and 2947636 * 600000ms resolves to
+ * 2026-01-16T16:40:00Z — the exact bucket of the last real observation. A
+ * 1-minute key here would break continuity with everything already written
+ * and write 1440 rows/day against a uniqueness constraint built for 144.
+ */
+function periodKey10Min(d: Date) {
+  const bucket = Math.floor(d.getTime() / (10 * 60 * 1000));
+  return `10m:${bucket}`;
 }
 function hashRow(input: string): string {
   return crypto.createHash("sha256").update(input, "utf8").digest("hex");
@@ -75,14 +84,34 @@ async function httpProbe(url: string) {
 
 export const runtime = "nodejs";
 
+/** Constant-time compare so the secret can't be probed by response timing. */
+function secretMatches(presented: string, expected: string): boolean {
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export async function GET(req: Request) {
-  const url = new URL(req.url);
+  // Vercel cron authenticates with `Authorization: Bearer <CRON_SECRET>`.
+  // The previous implementation read only `x-cron-secret` and `?token=`, so
+  // every scheduled invocation 401'd — ~every minute since January. The
+  // `?token=` form is gone deliberately: it wrote the secret into Vercel's
+  // access log on every request.
+  const expected = (process.env.CRON_SECRET ?? "").trim();
+  if (!expected) {
+    return Response.json(
+      { ok: false, error: "server_misconfigured", detail: "CRON_SECRET is not set" },
+      { status: 500 }
+    );
+  }
 
-  const token =
-    req.headers.get("x-cron-secret") ||
-    url.searchParams.get("token");
+  const auth = req.headers.get("authorization") ?? "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const headerSecret = (req.headers.get("x-cron-secret") ?? "").trim();
+  const presented = bearer || headerSecret;
 
-  if (!token || token !== process.env.CRON_SECRET) {
+  if (!presented || !secretMatches(presented, expected)) {
     return Response.json(
       { ok: false, error: "unauthorized" },
       { status: 401 }
@@ -91,11 +120,9 @@ export async function GET(req: Request) {
 
   const supabase = supabaseServiceServer();
 
-  // choose one series for v1; you can expand to multiple series keys later
-  const series_key = "lw.core.heartbeat";
 const now = new Date();
 const observed_at = now.toISOString();
-const period_key = periodKey1Min(now);
+const period_key = periodKey10Min(now);
 
 const probeUrl = process.env.LONGWATCH_PROBE_URL || "https://longwatch.win";
 const probe = await httpProbe(probeUrl);
