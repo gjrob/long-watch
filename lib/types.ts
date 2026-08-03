@@ -24,11 +24,18 @@ export interface Observation {
 /** Per-series rollup: how many rows, and how long since the last one. */
 export interface SeriesSummary {
   series_key: string;
+  label: string;
+  /** Total rows, including no_reading. */
   count: number;
+  /** Rows that are actual measurements. Drives freshness. */
+  snapshot_count: number;
   first_observed_at: string | null;
+  /** Newest signal_type='snapshot' row. NOT the newest row of any type. */
   last_observed_at: string | null;
-  /** Seconds between last_observed_at and the time of the request. */
+  /** Seconds since the last SNAPSHOT. A run of no_reading rows does not reset it. */
   age_seconds: number | null;
+  /** True when the newest snapshot is older than the series' expected interval. */
+  is_stale: boolean;
 }
 
 /**

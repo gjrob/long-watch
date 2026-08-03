@@ -8,6 +8,7 @@ import type {
 } from '@/lib/types';
 import { analyzeContinuity } from '@/lib/continuity';
 import { supabaseAnonServer } from '@/lib/supabase/server';
+import { KNOWN_SERIES } from '@/lib/airnow';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,17 @@ const STALE_AFTER_SECONDS = EXPECTED_INTERVAL_SECONDS * 3;
 /** The series whose cadence defines whether we are observing at all. */
 const HEARTBEAT_SERIES = 'lw.core.heartbeat';
 const PROBE_SERIES = 'lw.external.http_probe';
+
+/**
+ * Per-series staleness thresholds, in seconds. A series is stale when its
+ * newest SNAPSHOT is older than this. AirNow publishes hourly, so three
+ * missed hours is the equivalent grace the heartbeat gets at three intervals.
+ */
+const STALE_AFTER: Record<string, number> = {
+  'lw.core.heartbeat': 10 * 60 * 3,
+  'lw.external.http_probe': 10 * 60 * 3,
+};
+const AIR_STALE_AFTER = 60 * 60 * 3;
 
 const TAIL_LIMIT = 8;
 const PROBE_LIMIT = 200;
@@ -140,6 +152,7 @@ export async function GET() {
         .from('signals')
         .select('observed_at')
         .eq('series_key', HEARTBEAT_SERIES)
+        .eq('signal_type', 'snapshot')
         .order('observed_at', { ascending: true })
         .limit(CONTINUITY_LIMIT),
       supabase
@@ -182,30 +195,56 @@ export async function GET() {
   const heartbeats = (heartbeatRes.data ?? []) as { observed_at: string }[];
   const probeRows = (probeRes.data ?? []) as { observed_at: string; value_json: unknown }[];
 
-  const lastHeartbeat = heartbeats.length ? heartbeats[heartbeats.length - 1].observed_at : null;
-  const lastProbe = probeRows.length ? probeRows[0].observed_at : null;
-  const series: SeriesSummary[] = [
-    {
-      series_key: HEARTBEAT_SERIES,
-      count: heartbeats.length,
-      first_observed_at: heartbeats.length ? heartbeats[0].observed_at : null,
-      last_observed_at: lastHeartbeat,
-      age_seconds: ageSeconds(lastHeartbeat, nowMs),
-    },
-    {
-      series_key: PROBE_SERIES,
-      count: probeRows.length,
-      first_observed_at: probeRows.length ? probeRows[probeRows.length - 1].observed_at : null,
-      last_observed_at: lastProbe,
-      age_seconds: ageSeconds(lastProbe, nowMs),
-    },
-  ].filter((s) => s.count > 0);
+  // ── Per-series freshness, computed from signal_type='snapshot' ONLY ──
+  // A no_reading row records that we checked and got nothing. It is NOT an
+  // observation, so it must not reset the clock. Counting it would let a week
+  // of AirNow outages read as "current" while no measurement had arrived —
+  // the same false-green this instrument was rebuilt to eliminate.
+  const seriesResults = await Promise.all(
+    KNOWN_SERIES.map(async (def) => {
+      const [totalRes, snapRes] = await Promise.all([
+        supabase
+          .from('signals')
+          .select('id', { count: 'exact' })
+          .eq('series_key', def.key)
+          .range(0, 0),
+        supabase
+          .from('signals')
+          .select('observed_at', { count: 'exact' })
+          .eq('series_key', def.key)
+          .eq('signal_type', 'snapshot')
+          .order('observed_at', { ascending: false })
+          .range(0, 0),
+      ]);
+      const newestSnapshot =
+        (snapRes.data as { observed_at: string }[] | null)?.[0]?.observed_at ?? null;
+      const age = ageSeconds(newestSnapshot, nowMs);
+      const threshold = STALE_AFTER[def.key] ?? AIR_STALE_AFTER;
+      return {
+        series_key: def.key,
+        label: def.label,
+        count: totalRes.count ?? 0,
+        snapshot_count: snapRes.count ?? 0,
+        first_observed_at: null as string | null,
+        last_observed_at: newestSnapshot,
+        age_seconds: age,
+        is_stale: age === null || age > threshold,
+      };
+    }),
+  );
+  const series: SeriesSummary[] = seriesResults;
 
-  // No optimistic default: unknown age means not observing.
-  const observedAge = ageSeconds(latest?.observed_at ?? null, nowMs);
+  // Newest SNAPSHOT across all series — a no_reading row is not an observation
+  // and must not make the instrument look like it is watching.
+  const newestSnapshotAt = seriesResults
+    .map((s) => s.last_observed_at)
+    .filter((v): v is string => v !== null)
+    .sort()
+    .pop() ?? null;
+  const observedAge = ageSeconds(newestSnapshotAt, nowMs);
   const observing = {
     is_observing: observedAge !== null && observedAge <= STALE_AFTER_SECONDS,
-    last_observed_at: latest?.observed_at ?? null,
+    last_observed_at: newestSnapshotAt,
     age_seconds: observedAge,
     expected_interval_seconds: EXPECTED_INTERVAL_SECONDS,
     stale_after_seconds: STALE_AFTER_SECONDS,

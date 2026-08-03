@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/airnow",
+      "schedule": "35 * * * *"
     }
   ]
 }
