@@ -1,199 +1,137 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import styles from './home.module.css';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { DashboardData } from '@/lib/types';
-import Header from '@/components/layout/Header';
-import ViewToggle from '@/components/layout/ViewToggle';
-import StatusCard from '@/components/status/StatusCard';
-import MicroStats from '@/components/status/MicroStats';
-import PublicSummary from '@/components/public/PublicSummary';
-import RecentDeviations from '@/components/public/RecentDeviations';
-import LedgerSnapshot from '@/components/public/LedgerSnapshot';
-import SystemBoundary from '@/components/public/SystemBoundary';
-import VerificationNotice from '@/components/public/VerificationNotice';
-import DataOrigin from '@/components/public/DataOrigin';
-import AnomalyLog from '@/components/expert/AnomalyLog';
-import ProbeLog from '@/components/expert/ProbeLog';
-import LedgerChain from '@/components/expert/LedgerChain';
-import ContinuityStatus from '@/components/public/ContinuityStatus';
-import ObservationRecord from '@/components/public/ObservationRecord';
-import ContinuityDetail from '@/components/expert/ContinuityDetail';
-import CathedralArch from '@/components/layout/CathedralArch';
-import SuiteFooter from '@/components/layout/SuiteFooter';
+const investigationUrl =
+  'https://infrastructure.longwatch.win/index.php/2026/09/18/does-a-773-million-funding-gap-mean-wilmingtons-new-bridge-has-to-be-tolled-2/';
 
-const POLL_INTERVAL = 30_000;
+export const metadata: Metadata = {
+  title: 'Long Watch — Argument Intelligence & Investigative Research',
+  description:
+    'Long Watch tests consequential claims against evidence through structured analysis, human judgment, and a permanent record of what survives.',
+  alternates: { canonical: 'https://www.longwatch.win/' },
+};
 
-export default function Page() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [mode, setMode] = useState<'public' | 'expert'>('public');
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const controllerRef = useRef<AbortController | null>(null);
+const method = [
+  ['01', 'Claim', 'Define the consequential proposition precisely.'],
+  ['02', 'Evidence', 'Gather the relevant record and freeze the packet being tested.'],
+  ['03', 'Press', 'Construct the strongest case for the proposition.'],
+  ['04', 'Challenge', 'Construct the strongest challenge to it.'],
+  ['05', 'Human judgment', 'A person reviews what the evidence actually supports.'],
+  ['06', 'What survives', 'State the finding at the level the evidence permits.'],
+  ['07', 'Ledger', 'Preserve the finding and the path that led to it.'],
+] as const;
 
-  const fetchDashboard = useCallback(async () => {
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
-
-    try {
-      const res = await fetch('/api/dashboard', { signal: controller.signal });
-      if (!res.ok) {
-        setFailed(true);
-        setInitialLoad(false);
-        return;
-      }
-      const json: DashboardData = await res.json();
-      setData(json);
-      setFailed(false);
-      setInitialLoad(false);
-    } catch (e) {
-      if ((e as Error)?.name === 'AbortError') return;
-      setFailed(true);
-      setInitialLoad(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboard();
-    const interval = setInterval(fetchDashboard, POLL_INTERVAL);
-    return () => {
-      clearInterval(interval);
-      controllerRef.current?.abort();
-    };
-  }, [fetchDashboard]);
-
-  if (initialLoad) {
-    return (
-      <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
-        <CathedralArch position="top" />
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <Header observing={null} />
-          <div className="mt-12 text-center text-sm text-[#6B7280]">Reading the ledger…</div>
-        </div>
-      </main>
-    );
-  }
-
-  if (!data) {
-    return (
-      <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
-        <CathedralArch position="top" />
-        <div className="mx-auto max-w-6xl px-6 py-8">
-          <Header observing={null} />
-          <div className="mt-12 rounded-lg bg-[#141922] p-6 text-sm text-[#D4A373]">
-            The ledger could not be read. No observation state can be reported.
-          </div>
-        </div>
-      </main>
-    );
-  }
-
+export default function Home() {
   return (
-    <main className="min-h-screen bg-[#0E1116] text-[#E6EAF2]">
-      <CathedralArch position="top" />
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <Header observing={data.observing} />
+    <main className={styles.site}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <Link className={styles.wordmark} href="/" aria-label="Long Watch home">LONG WATCH<span className={styles.wordmarkRule} /></Link>
+          <nav className={styles.nav} aria-label="Primary navigation">
+            <a href="#investigations">Investigations</a>
+            <a href="#method">Method</a>
+            <a href="#publications">Publications</a>
+            <Link href="/observatory">Observatory</Link>
+          </nav>
+        </div>
+      </header>
 
-        {(failed || data.error) && (
-          <div className="mt-4 rounded-lg border border-[#D4A373]/30 bg-[#D4A373]/5 px-4 py-3 text-xs text-[#D4A373]">
-            {data.error ?? 'The last refresh failed. Values below may be from an earlier read.'}
-          </div>
-        )}
-
-        {/* Observation state, first and largest on the page. */}
-        <div className="mt-6 rounded-lg bg-[#141922] p-6">
-          <StatusCard observing={data.observing} />
-          <div className="mt-4 border-t border-[#2A3242] pt-4">
-            <MicroStats ledger={data.ledger} series={data.series} />
+      <section className={styles.hero} aria-labelledby="hero-title">
+        <div className={styles.container}>
+          <p className={styles.eyebrow}>Pressed. Shaken. What survives?</p>
+          <h1 id="hero-title">We test consequential claims against evidence<span className={styles.fullStop}>.</span></h1>
+          <p className={styles.heroLead}>Long Watch subjects important claims to structured evidence, competing analysis, and human judgment — then preserves what survives in a permanent record.</p>
+          <p className={styles.operating}>Machine analysis. <span>Human judgment.</span> Permanent ledger.</p>
+          <div className={styles.heroActions}>
+            <a className={styles.primaryButton} href={investigationUrl}>Read our first investigation <span aria-hidden="true">↗</span></a>
+            <a className={styles.textButton} href="#method">How Long Watch works <span aria-hidden="true">↓</span></a>
           </div>
         </div>
+        <div className={styles.heroFoot} aria-hidden="true"><span>01 / THE TEST</span><span>SCROLL TO EXPLORE ↓</span></div>
+      </section>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-[#9AA4B2]">
-            This system records observable signals. It does not estimate the ones it missed.
+      <section className={styles.investigation} id="investigations" aria-labelledby="investigation-title">
+        <div className={styles.container}>
+          <div className={styles.sectionHead}><p className={styles.eyebrow}>First investigation</p><span className={styles.sectionIndex}>01 — PUBLISHED WORK</span></div>
+          <div className={styles.featureGrid}>
+            <div>
+              <p className={styles.publicationLabel}>Cape Fear Infrastructure</p>
+              <h2 id="investigation-title">Does a $773 Million Funding Gap Mean Wilmington&apos;s New Bridge Has to Be Tolled?</h2>
+            </div>
+            <div className={styles.featureAside}>
+              <p>A large funding gap does not by itself prove that tolling is necessary.</p>
+              <a className={styles.arrowLink} href={investigationUrl}>Read the investigation <span aria-hidden="true">↗</span></a>
+            </div>
           </div>
-          <ViewToggle mode={mode} onChange={setMode} />
         </div>
+      </section>
 
-        {mode === 'public' ? (
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-7">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <PublicSummary observing={data.observing} series={data.series} />
-                  <div className="mt-4">
-                    <ContinuityStatus continuity={data.continuity} />
-                  </div>
-                  <div className="mt-4 rounded-md bg-[#1A2030] p-4">
-                    <ObservationRecord continuity={data.continuity} />
-                  </div>
-                </div>
-              </div>
-              <div className="col-span-12 lg:col-span-5 space-y-4">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <RecentDeviations anomalies={data.anomalies} />
-                </div>
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <LedgerSnapshot ledger={data.ledger} />
-                </div>
-              </div>
-            </div>
-
-            <SystemBoundary />
-            <VerificationNotice />
+      <section className={styles.method} id="method" aria-labelledby="method-title">
+        <div className={styles.container}>
+          <div className={styles.sectionHead}><p className={styles.eyebrow}>The method</p><span className={styles.sectionIndex}>02 — HOW IT WORKS</span></div>
+          <div className={styles.methodIntro}>
+            <h2 id="method-title">The strongest test an argument can survive.</h2>
+            <p>A claim is pressed by the evidence and challenged from the other side. Machine output does not independently become the final judgment.</p>
           </div>
-        ) : (
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-7">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <h2 className="text-sm font-semibold text-[#9AA4B2]">Hash Chain (tail)</h2>
-                  <div className="mt-4">
-                    <LedgerChain tail={data.ledger_tail} />
-                  </div>
-                </div>
-              </div>
-              <div className="col-span-12 lg:col-span-5">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <h2 className="text-sm font-semibold text-[#9AA4B2]">Observation Continuity</h2>
-                  <div className="mt-4">
-                    <ContinuityDetail continuity={data.continuity} />
-                  </div>
-                </div>
-              </div>
-            </div>
+          <ol className={styles.methodList}>
+            {method.map(([number, title, description]) => (
+              <li key={number}><span className={styles.stepNumber}>{number}</span><strong>{title}</strong><span>{description}</span></li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 lg:col-span-7">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <h2 className="text-sm font-semibold text-[#9AA4B2]">External HTTP Probe</h2>
-                  <div className="mt-4">
-                    <ProbeLog points={data.probe} />
-                  </div>
-                </div>
-              </div>
-              <div className="col-span-12 lg:col-span-5">
-                <div className="rounded-lg bg-[#141922] p-6">
-                  <h2 className="text-sm font-semibold text-[#9AA4B2]">Anomaly Log</h2>
-                  <div className="mt-4">
-                    <AnomalyLog items={data.anomalies} />
-                  </div>
-                </div>
-              </div>
+      <section className={styles.doors} aria-labelledby="doors-title">
+        <div className={styles.container}>
+          <div className={styles.sectionHead}><p className={styles.eyebrow}>Where to go next</p><span className={styles.sectionIndex}>03 — THREE DOORS</span></div>
+          <h2 id="doors-title" className={styles.visuallyHidden}>Explore Long Watch</h2>
+          <div className={styles.doorGrid}>
+            <article className={styles.door}>
+              <span className={styles.doorNumber}>01 / INVESTIGATIONS</span>
+              <h3>Claims in public life.</h3>
+              <p>Public-interest investigations of consequential claims, beginning with Cape Fear Infrastructure.</p>
+              <a className={styles.arrowLink} href={investigationUrl}>Explore investigations <span aria-hidden="true">↗</span></a>
+            </article>
+            <article className={styles.door}>
+              <span className={styles.doorNumber}>02 / ARGUMENT INTELLIGENCE</span>
+              <h3>Decisions under pressure.</h3>
+              <p>Research that structures a proposition, tests competing arguments, and records what survives human review.</p>
+              <a className={styles.arrowLink} href="#method">Learn about the method <span aria-hidden="true">↑</span></a>
+            </article>
+            <article className={styles.door} id="publications">
+              <span className={styles.doorNumber}>03 / PUBLICATIONS</span>
+              <h3>Local work. Distinct desks.</h3>
+              <ul>
+                <li><a href="https://infrastructure.longwatch.win/">Cape Fear Infrastructure <span aria-hidden="true">↗</span></a></li>
+                <li><a href="https://signal.longwatch.win/">Wilmington Local Signal <span aria-hidden="true">↗</span></a></li>
+                <li>Cape Fear Business <span className={styles.muted}>— publication profile</span></li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.record} aria-labelledby="record-title">
+        <div className={styles.container}>
+          <p className={styles.eyebrow}>The record matters</p>
+          <div className={styles.recordGrid}>
+            <h2 id="record-title">A conclusion should have a history.</h2>
+            <div>
+              <p>Analysis is easy to rewrite after the fact. Long Watch preserves observable records so the path to a conclusion can be examined later.</p>
+              <Link className={styles.arrowLink} href="/observatory">View the observatory <span aria-hidden="true">↗</span></Link>
             </div>
           </div>
-        )}
+        </div>
+      </section>
 
-        <footer className="mt-10 space-y-3">
-          <DataOrigin />
-          <div className="text-xs text-[#6B7280]">Append-only · Publicly inspectable · Time-indexed</div>
-          <div className="text-xs text-[#4A5568]">Powered by BlueTubeTV</div>
-          <div className="mt-4">
-            <SuiteFooter />
-          </div>
-        </footer>
-      </div>
-      <CathedralArch position="bottom" />
+      <footer className={styles.footer}>
+        <div className={styles.container}>
+          <div className={styles.footerTop}><strong>LONG WATCH</strong><nav aria-label="Footer navigation"><a href="#investigations">Investigations</a><a href="#publications">Publications</a><Link href="/observatory">Observatory</Link></nav></div>
+          <p>Machine analysis. Human judgment. Permanent ledger.</p>
+          <p className={styles.principle}>We don&apos;t sell the truth to the highest bidder.<br />We sell the strongest test an argument can survive.</p>
+        </div>
+      </footer>
     </main>
   );
 }
