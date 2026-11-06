@@ -54,9 +54,12 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    fetchDashboard();
+    const initialFetch = setTimeout(() => {
+      void fetchDashboard();
+    }, 0);
     const interval = setInterval(fetchDashboard, POLL_INTERVAL);
     return () => {
+      clearTimeout(initialFetch);
       clearInterval(interval);
       controllerRef.current?.abort();
     };

@@ -32,6 +32,7 @@ export default function Home() {
             <a href="#investigations">Investigations</a>
             <a href="#method">Method</a>
             <a href="#publications">Publications</a>
+            <Link href="/library">Library</Link>
             <Link href="/observatory">Observatory</Link>
           </nav>
         </div>
