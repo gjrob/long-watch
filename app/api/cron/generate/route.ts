@@ -65,8 +65,12 @@ async function httpProbe(url: string) {
       latency_ms,
       timeout_ms: timeoutMs,
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     const latency_ms = Date.now() - start;
+    const errorDetails =
+      typeof e === "object" && e !== null
+        ? (e as { name?: unknown; message?: unknown })
+        : undefined;
 
     return {
       ok: false as const,
@@ -74,7 +78,11 @@ async function httpProbe(url: string) {
       status: null,
       latency_ms,
       timeout_ms: timeoutMs,
-      error: String(e?.name === "AbortError" ? "timeout" : (e?.message ?? e)),
+      error: String(
+        errorDetails?.name === "AbortError"
+          ? "timeout"
+          : (errorDetails?.message ?? e)
+      ),
     };
   } finally {
     clearTimeout(t);
@@ -147,8 +155,19 @@ const seriesWrites = [
   },
 ] as const;
 
-const insertedRows: any[] = [];
-const deduped: any[] = [];
+type InsertedSignal = {
+  id: string;
+  series_key: (typeof seriesWrites)[number]["series_key"];
+  observed_at: string;
+  row_hash: string;
+  prev_hash: string | null;
+  period_key: string;
+};
+const insertedRows: InsertedSignal[] = [];
+const deduped: Array<{
+  series_key: (typeof seriesWrites)[number]["series_key"];
+  period_key: string;
+}> = [];
 
 for (const w of seriesWrites) {
   // fetch last row_hash for THIS series to chain correctly
@@ -199,7 +218,7 @@ for (const w of seriesWrites) {
 
   if (insErr) {
     // unique violation => already written this period for this series
-    if ((insErr as any).code === "23505") {
+    if (insErr.code === "23505") {
       deduped.push({ series_key: w.series_key, period_key });
       continue;
     }
